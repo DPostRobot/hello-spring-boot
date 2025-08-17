@@ -1,7 +1,6 @@
 package com.example.hello_spring_boot;
 
 import org.springframework.web.bind.annotation.*;
-import com.example.hello_spring_boot.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
