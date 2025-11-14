@@ -30,6 +30,11 @@ public class HelloController {
         return userService.findUserById(id);
     }
 
+    @PutMapping("/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        return userService.updateUser(id, userDetails);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUserById(id);

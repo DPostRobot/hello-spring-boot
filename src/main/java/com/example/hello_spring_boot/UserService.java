@@ -31,4 +31,17 @@ public class UserService {
         }
         userRepository.deleteById(id);
     }
+
+    public User updateUser(Long id, User userDetails) {
+        // 1. 查找用户
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
+
+        // 2. 更新字段
+        existingUser.setName(userDetails.getName());
+        existingUser.setAge(userDetails.getAge());
+
+        // 3. 保存更新
+        return userRepository.save(existingUser);
+    }
 }
