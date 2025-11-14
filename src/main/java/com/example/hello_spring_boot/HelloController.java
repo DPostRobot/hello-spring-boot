@@ -3,7 +3,6 @@ package com.example.hello_spring_boot;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/users")
