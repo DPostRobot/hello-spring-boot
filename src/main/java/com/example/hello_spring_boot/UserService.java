@@ -16,8 +16,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public Optional<User> findUserById(Long id) {
-        return userRepository.findById(id);
+    public User findUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
     }
 
     public List<User> findAllUsers() {
@@ -25,6 +26,9 @@ public class UserService {
     }
 
     public void deleteUserById(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException("User not found with id: " + id);
+        }
         userRepository.deleteById(id);
     }
 }
