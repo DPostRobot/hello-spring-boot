@@ -1,0 +1,242 @@
+{
+  "config": {
+    "baseUrl": "http://localhost:8080",
+    "timeout": 5000,
+    "stopOnFailure": false
+  },
+  "variables": {
+    "name1": "John Doe",
+    "age1": 30,
+    "name2": "Jane Doe",
+    "age2": 28,
+    "invalid_age": "abc"
+  },
+  "tests": [
+    {
+      "name": "User CRUD Workflow",
+      "steps": [
+        {
+          "name": "Create User A",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {
+              "name": "{{name1}}",
+              "age": "{{age1}}"
+            }
+          },
+          "expect": {
+            "status": 200,
+            "json": {
+              "name": "{{name1}}",
+              "age": "{{age1}}"
+            }
+          },
+          "extract": {
+            "userA_id": "$.id"
+          }
+        },
+        {
+          "name": "Create User B",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {
+              "name": "{{name2}}",
+              "age": "{{age2}}"
+            }
+          },
+          "expect": {
+            "status": 200
+          },
+          "extract": {
+            "userB_id": "$.id"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "url": "/api/v1/users"
+          },
+          "expect": {
+            "status": 200,
+            "contains": "{{name1}}"
+          }
+        },
+        {
+          "name": "Get User A By ID",
+          "request": {
+            "method": "GET",
+            "url": "/api/v1/users/{{userA_id}}"
+          },
+          "expect": {
+            "status": 200,
+            "json": {
+              "id": "{{userA_id}}",
+              "name": "{{name1}}",
+              "age": "{{age1}}"
+            }
+          }
+        },
+        {
+          "name": "Get User with invalid id",
+          "request": {
+            "method": "GET",
+            "url": "/api/v1/users/999999"
+          },
+          "expect": {
+            "status": 404,
+            "json": {
+              "message": "User not found with id: 999999"
+            }
+          }
+        },
+        {
+          "name": "Update User A",
+          "request": {
+            "method": "PUT",
+            "url": "/api/v1/users/{{userA_id}}",
+            "body": {
+              "name": "John A. Doe",
+              "age": 31
+            }
+          },
+          "expect": {
+            "status": 200,
+            "json": {
+              "id": "{{userA_id}}",
+              "name": "John A. Doe",
+              "age": 31
+            }
+          }
+        },
+        {
+          "name": "Update User Not Found",
+          "request": {
+            "method": "PUT",
+            "url": "/api/v1/users/987654",
+            "body": {
+              "name": "Ghost User",
+              "age": 100
+            }
+          },
+          "expect": {
+            "status": 404,
+            "json": {
+              "message": "User not found with id: 987654"
+            }
+          }
+        },
+        {
+          "name": "Update User Bad Request",
+          "request": {
+            "method": "PUT",
+            "url": "/api/v1/users/{{userA_id}}",
+            "body": {
+              "age": "{{invalid_age}}"
+            }
+          },
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "name": "Delete User A",
+          "request": {
+            "method": "DELETE",
+            "url": "/api/v1/users/{{userA_id}}"
+          },
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "name": "Delete User A again",
+          "request": {
+            "method": "DELETE",
+            "url": "/api/v1/users/{{userA_id}}"
+          },
+          "expect": {
+            "status": 404,
+            "json": {
+              "message": "User not found with id: {{userA_id}}"
+            }
+          }
+        },
+        {
+          "name": "Get User A After Delete",
+          "request": {
+            "method": "GET",
+            "url": "/api/v1/users/{{userA_id}}"
+          },
+          "expect": {
+            "status": 404
+          }
+        },
+        {
+          "name": "Delete User B",
+          "request": {
+            "method": "DELETE",
+            "url": "/api/v1/users/{{userB_id}}"
+          },
+          "expect": {
+            "status": 200
+          }
+        },
+        {
+          "name": "Create User Missing Name",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {
+              "age": 20
+            }
+          },
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "name": "Create User Negative Age",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {
+              "name": "Bad User",
+              "age": -99
+            }
+          },
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "name": "Create User Wrong Types",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {
+              "name": 12345,
+              "age": "not a number"
+            }
+          },
+          "expect": {
+            "status": 400
+          }
+        },
+        {
+          "name": "Create User Empty Body",
+          "request": {
+            "method": "POST",
+            "url": "/api/v1/users",
+            "body": {}
+          },
+          "expect": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ]
+}
