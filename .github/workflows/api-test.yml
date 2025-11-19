@@ -1,0 +1,96 @@
+name: API Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build application
+        run: mvn clean package -DskipTests
+      
+      - name: Start application
+        run: |
+          echo "Starting Spring Boot application..."
+          java -jar target/*.jar > app.log 2>&1 &
+          APP_PID=$!
+          echo "Application started with PID: $APP_PID"
+          echo "Waiting 30 seconds for initial startup..."
+          sleep 30
+          echo "Checking if application process is still running..."
+          if ! ps -p $APP_PID > /dev/null; then
+            echo "ERROR: Application process died during startup!"
+            echo "=== Application Logs ==="
+            cat app.log || true
+            exit 1
+          fi
+          echo "Application process is running (PID: $APP_PID)"
+        env:
+          SPRING_PROFILES_ACTIVE: test
+      
+      - name: Wait for application to be ready
+        run: |
+            echo "Waiting for port 8080..."
+            for i in {1..60}; do
+            if nc -z localhost 8080; then
+                echo "Application is ready!"
+                exit 0
+            fi
+            sleep 2
+            done
+            echo "ERROR: Application did not open port 8080"
+            exit 1
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Run API tests
+        id: test
+        run: |
+          node test-runner.js test_case.json
+      
+      - name: Send test results to backend
+        if: always()
+        run: |
+          if [ -f test_results.json ]; then
+            echo "Sending test results to backend..."
+            REPO_URL="${{ github.repository }}"
+            ORG="${{ github.repository_owner }}"
+            WORKFLOW_RUN_ID="${{ github.run_id }}"
+            WORKFLOW_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            
+            # Build JSON payload using jq
+            PAYLOAD=$(jq -n \
+              --arg repo_url "https://github.com/$REPO_URL" \
+              --arg org "$ORG" \
+              --arg workflow_run_id "$WORKFLOW_RUN_ID" \
+              --arg workflow_run_url "$WORKFLOW_RUN_URL" \
+              --slurpfile test_results test_results.json \
+              '{repo_url: $repo_url, org: $org, workflow_run_id: $workflow_run_id, workflow_run_url: $workflow_run_url, test_results: $test_results[0]}')
+            
+            curl -X POST "${{ env.backend_api_url }}/repos/test-results" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" || echo "Failed to send test results, but continuing..."
+          else
+            echo "test_results.json not found, skipping..."
+          fi
+        env:
+          backend_api_url: 150.158.113.67:8000
+      
+      - name: Stop application
+        if: always()
+        run: pkill -f "java -jar"
